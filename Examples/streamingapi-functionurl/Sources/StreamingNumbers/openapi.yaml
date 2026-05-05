@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: StreamingNumbers
+  version: 1.0.0
+  description: |
+    Minimal example demonstrating response streaming with `swift-openapi-lambda`.
+    Deploy behind an AWS Lambda Function URL with `InvokeMode: RESPONSE_STREAM` and
+    each line of the JSONL response is delivered to the client as soon as the handler
+    writes it.
+
+components:
+  schemas:
+    NumbersRequest:
+      type: object
+      required: [count]
+      properties:
+        count:
+          type: integer
+          minimum: 1
+          maximum: 1000
+    NumberSnapshot:
+      type: object
+      required: [value]
+      properties:
+        value:
+          type: integer
+
+paths:
+  /numbers/stream:
+    post:
+      summary: Stream a sequence of NumberSnapshot values, one per JSONL line.
+      operationId: streamNumbers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NumbersRequest'
+      responses:
+        200:
+          description: A JSONL stream of NumberSnapshot objects, one per line.
+          content:
+            application/jsonl:
+              schema:
+                $ref: '#/components/schemas/NumberSnapshot'
+        400:
+          description: Bad request

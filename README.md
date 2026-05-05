@@ -162,6 +162,58 @@ let simpleAuthorizerHandler: (APIGatewayLambdaAuthorizerRequest, LambdaContext) 
 }
 ```
 
+## Streaming Responses
+
+For Lambda Function URLs configured with `InvokeMode: RESPONSE_STREAM`, this library provides an `OpenAPILambdaStreamingService` protocol that lets you return chunked HTTP responses (e.g. `application/jsonl`, `text/event-stream`) instead of single buffered values. Buffered routes (`application/json`, `text/plain`) keep working on the same service — they emit a single chunk to the underlying response stream.
+
+Adopt `OpenAPILambdaStreamingHttpApi` in place of `OpenAPILambdaHttpApi`. AWS Lambda Function URL events share the API Gateway HTTP API wire payload (payload format v2), so the same `Event = APIGatewayV2Request` type is used for both deployment targets.
+
+```swift
+import OpenAPIRuntime
+import OpenAPILambda
+
+@main
+struct MyService: APIProtocol, OpenAPILambdaStreamingHttpApi {
+    func register(transport: OpenAPILambdaTransport) throws {
+        try self.registerHandlers(on: transport)
+    }
+
+    static func main() async throws {
+        try await Self().run()
+    }
+
+    // Streaming route — return an HTTPBody wrapping an AsyncSequence of bytes
+    func streamNumbers(_ input: Operations.streamNumbers.Input) async throws -> Operations.streamNumbers.Output {
+        let snapshots = AsyncStream<ArraySlice<UInt8>> { continuation in
+            for value in 1...10 {
+                let line = #"{"value":\#(value)}"#.utf8 + [0x0A]
+                continuation.yield(ArraySlice(line))
+            }
+            continuation.finish()
+        }
+        let body = HTTPBody(snapshots, length: .unknown, iterationBehavior: .single)
+        return .ok(.init(body: .application_jsonl(body)))
+    }
+
+    // Buffered route on the same service — works transparently
+    func health(_ input: Operations.health.Input) async throws -> Operations.health.Output {
+        .ok(.init(body: .json(.init(status: "OK"))))
+    }
+}
+```
+
+In your SAM template, configure the function with a Function URL set to `RESPONSE_STREAM`:
+
+```yaml
+FunctionUrlConfig:
+  AuthType: NONE
+  InvokeMode: RESPONSE_STREAM
+```
+
+Note: `sam local start-api` does **not** emulate streaming responses (`aws/aws-sam-cli` issues #6501 and #8606). Local development requires deploying to AWS, or invoking the swift binary directly via `swift run`.
+
+See [Examples/streamingapi-functionurl](Examples/streamingapi-functionurl) for a complete working example.
+
 ## Advanced Usage
 
 ### Custom Event Types

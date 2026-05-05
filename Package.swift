@@ -8,9 +8,9 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [.library(name: "OpenAPILambda", targets: ["OpenAPILambda"])],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-openapi-runtime.git", from: "1.8.2"),
-        .package(url: "https://github.com/awslabs/swift-aws-lambda-runtime.git", from: "2.0.0"),
-        .package(url: "https://github.com/awslabs/swift-aws-lambda-events.git", from: "1.2.0"),
+        .package(url: "https://github.com/apple/swift-openapi-runtime.git", from: "1.11.0"),
+        .package(url: "https://github.com/awslabs/swift-aws-lambda-runtime.git", from: "2.8.0"),
+        .package(url: "https://github.com/awslabs/swift-aws-lambda-events.git", from: "1.5.0"),
     ],
     targets: [
         .target(

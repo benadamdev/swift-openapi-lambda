@@ -1,0 +1,10 @@
+.aws-sam
+.build
+.index-build
+.swiftpm
+.vscode
+Package.resolved
+samconfig.toml
+*.d
+*o
+*swiftdeps

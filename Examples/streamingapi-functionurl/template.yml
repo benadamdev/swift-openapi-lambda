@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for the StreamingNumbers Lambda Function URL with response streaming
+
+# This is an example SAM template for demonstration. For production deployments, follow
+# the best-practices guidance referenced in `Examples/quoteapi-apigtw/template.yml`.
+
+Globals:
+  Function:
+    Timeout: 60
+    CodeUri: .
+    Handler: swift.bootstrap
+    Runtime: provided.al2
+    MemorySize: 256
+    Architectures:
+      - arm64
+
+Resources:
+  StreamingNumbers:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          # by default, AWS Lambda runtime produces no log
+          # use `LOG_LEVEL: debug` for lifecycle and event handling information
+          # use `LOG_LEVEL: trace` for detailed input event information
+          LOG_LEVEL: trace
+      FunctionUrlConfig:
+        AuthType: NONE
+        # RESPONSE_STREAM is required for chunked responses. With BUFFERED, the runtime
+        # will buffer the entire response before sending it to the client.
+        InvokeMode: RESPONSE_STREAM
+    Metadata:
+      BuildMethod: makefile
+
+# print the Function URL
+Outputs:
+  FunctionUrl:
+    Description: "Lambda Function URL endpoint for the streaming service"
+    Value: !GetAtt StreamingNumbersUrl.FunctionUrl
