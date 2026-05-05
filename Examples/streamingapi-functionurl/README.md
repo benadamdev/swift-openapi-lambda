@@ -16,7 +16,40 @@ Response streaming requires `InvokeMode: RESPONSE_STREAM`, which is supported by
 
 This service conforms to `OpenAPILambdaStreamingFunctionURL`, which uses `Event = FunctionURLRequest`. Lambda Function URLs are the only AWS front door that supports progressive HTTP response streaming — API Gateway HTTP API and Application Load Balancer both buffer the entire response before delivering it to the client, even when the Lambda handler writes chunked output.
 
-## Build & deploy
+## Local development (no AWS, no SAM)
+
+`swift-aws-lambda-runtime` ships its own local HTTP server (gated by the `LocalServerSupport` SwiftPM trait, on by default) that supports streaming end-to-end. **`sam local start-api` and `sam local start-lambda` cannot emulate streaming responses** (`aws/aws-sam-cli` #6501 and #8606); the AWS Lambda Runtime Interface Emulator likewise lacks streaming (`aws/aws-lambda-runtime-interface-emulator` #175). The runtime's built-in server bypasses all of that.
+
+```bash
+# Build + run; the runtime starts an HTTP server on 127.0.0.1:7000
+swift run StreamingNumbers
+
+# In another terminal, POST a synthetic FunctionURLRequest event
+curl --no-buffer -X POST http://127.0.0.1:7000/invoke \
+     -H "Content-Type: application/json" \
+     -d '{
+       "rawQueryString": "",
+       "headers": {"host": "localhost", "content-type": "application/json"},
+       "requestContext": {
+         "apiId": "local",
+         "http": {"sourceIp": "127.0.0.1", "userAgent": "curl", "method": "POST", "path": "/numbers/stream", "protocol": "HTTP/1.1"},
+         "timeEpoch": 0, "domainPrefix": "local", "accountId": "0",
+         "time": "2026", "stage": "$default", "routeKey": "$default",
+         "domainName": "localhost", "requestId": "test"
+       },
+       "isBase64Encoded": false,
+       "version": "2.0",
+       "routeKey": "$default",
+       "rawPath": "/numbers/stream",
+       "body": "{\"count\":10}"
+     }'
+```
+
+The response is the wire format the AWS Function URL would emit: a `StreamingLambdaStatusAndHeadersResponse` JSON, eight null bytes (the framing separator), and then the chunked JSONL body — one `{"value":n}` line every ~100 ms.
+
+`LOCAL_LAMBDA_HOST`, `LOCAL_LAMBDA_PORT`, and `LOCAL_LAMBDA_INVOCATION_ENDPOINT` are honoured if you need to relocate the server.
+
+## Build & deploy to AWS
 
 ```bash
 make build-StreamingNumbers   # cross-compile to Linux/arm64 in Docker
@@ -25,7 +58,7 @@ make deploy                   # `sam deploy --guided` first time, then `sam depl
 
 The stack output `FunctionUrl` is the endpoint to call.
 
-## Test
+## Test the deployed Function URL
 
 ```bash
 # Stream 20 snapshots; --no-buffer is critical so curl doesn't buffer the body
