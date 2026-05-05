@@ -14,7 +14,7 @@ A buffered `/health` route is also registered to demonstrate that buffered and s
 
 Response streaming requires `InvokeMode: RESPONSE_STREAM`, which is supported by Lambda Function URLs and (since November 2025) by API Gateway REST APIs with `responseTransferMode: STREAM`. **API Gateway HTTP API does not support response streaming**, so the `quoteapi-apigtw` example template can't be repurposed for streaming.
 
-`FunctionURLRequest` and `APIGatewayV2Request` share the same wire payload (payload format v2), so this service uses `Event = APIGatewayV2Request` (provided by `OpenAPILambdaStreamingHttpApi`) — the same code works behind either trigger.
+This service conforms to `OpenAPILambdaStreamingFunctionURL`, which uses `Event = FunctionURLRequest`. Lambda Function URLs are the only AWS front door that supports progressive HTTP response streaming — API Gateway HTTP API and Application Load Balancer both buffer the entire response before delivering it to the client, even when the Lambda handler writes chunked output.
 
 ## Build & deploy
 

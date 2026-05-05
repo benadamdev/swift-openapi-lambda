@@ -73,7 +73,7 @@ struct StreamingHandlerTests {
 
     /// Streaming service that registers two routes: a buffered `/health` and a streaming
     /// `/numbers/stream` that emits three JSONL lines.
-    struct StreamingTestService: OpenAPILambdaStreamingHttpApi {
+    struct StreamingTestService: OpenAPILambdaStreamingFunctionURL {
         func register(transport: OpenAPILambdaTransport) throws {
             try transport.router.add(method: .get, path: "/health") { _, _, _ in
                 (HTTPResponse(status: .ok), HTTPBody("OK"))
@@ -94,7 +94,7 @@ struct StreamingHandlerTests {
         }
     }
 
-    /// JSON for an `APIGatewayV2Request` describing a `POST /numbers/stream` invocation.
+    /// JSON for a `FunctionURLRequest` describing the given method/path invocation.
     static func eventJSON(method: String, path: String) -> String {
         """
         {
@@ -114,6 +114,7 @@ struct StreamingHandlerTests {
             "accountId": "000000000000",
             "time": "07/Dec/2023:14:05:40 +0000",
             "stage": "$default",
+            "routeKey": "$default",
             "domainName": "test.lambda-url.us-east-1.on.aws",
             "requestId": "test"
           },

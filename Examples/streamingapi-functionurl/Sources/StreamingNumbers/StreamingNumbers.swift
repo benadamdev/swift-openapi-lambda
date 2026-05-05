@@ -19,7 +19,7 @@ import OpenAPIRuntime
 import OpenAPILambda
 
 @main
-struct StreamingNumbersService: APIProtocol, OpenAPILambdaStreamingHttpApi {
+struct StreamingNumbersService: APIProtocol, OpenAPILambdaStreamingFunctionURL {
 
     let logger: Logger
 

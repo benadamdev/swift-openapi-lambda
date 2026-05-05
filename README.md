@@ -166,14 +166,16 @@ let simpleAuthorizerHandler: (APIGatewayLambdaAuthorizerRequest, LambdaContext) 
 
 For Lambda Function URLs configured with `InvokeMode: RESPONSE_STREAM`, this library provides an `OpenAPILambdaStreamingService` protocol that lets you return chunked HTTP responses (e.g. `application/jsonl`, `text/event-stream`) instead of single buffered values. Buffered routes (`application/json`, `text/plain`) keep working on the same service — they emit a single chunk to the underlying response stream.
 
-Adopt `OpenAPILambdaStreamingHttpApi` in place of `OpenAPILambdaHttpApi`. AWS Lambda Function URL events share the API Gateway HTTP API wire payload (payload format v2), so the same `Event = APIGatewayV2Request` type is used for both deployment targets.
+**Lambda Function URLs are the only AWS front door that supports progressive response streaming.** API Gateway HTTP API and Application Load Balancer both buffer the entire response before delivering it to the client, even when the Lambda handler writes chunked output. For those, keep using `OpenAPILambdaHttpApi` / `OpenAPILambdaALB` (buffered).
+
+Adopt `OpenAPILambdaStreamingFunctionURL` and conform your service. The mixin uses `Event = FunctionURLRequest` (a `Sendable, Codable` type from `swift-aws-lambda-events`).
 
 ```swift
 import OpenAPIRuntime
 import OpenAPILambda
 
 @main
-struct MyService: APIProtocol, OpenAPILambdaStreamingHttpApi {
+struct MyService: APIProtocol, OpenAPILambdaStreamingFunctionURL {
     func register(transport: OpenAPILambdaTransport) throws {
         try self.registerHandlers(on: transport)
     }
